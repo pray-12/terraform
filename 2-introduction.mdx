@@ -1,0 +1,72 @@
+**To automate the infra creation, we will use Terraform**
+
+- **IaaC** - Infrastructure as a Code -Terraform
+- **CM** - Configuration Management - Ansible
+- **PaaC** - Platform as a Code - Docker, Kubernetes
+- **Paac** - Pipeline as a Code - Jenkins, GitHub Actions
+
+
+- **Terraform** was launched in 2014, developed by Hashicorp
+- Developed by using `Go Programming Language`
+- Terraform files will be written to automate the infrastructure creation `.tf`
+
+Alternatives;
+
+`Open Tofu (forked version of terraform)`, `Pulimi`, `AWS - Cloud Formation`
+
+
+Note: Terraform is cloud independent.
+
+### Real-world meaning:
+
+Instead of manually:
+
+
+- creating EC2
+- setting VPC
+- configuring network
+
+👉 You write code → Terraform does everything
+
+### What is cloud independent? 
+
+It means that you can use terraform to create infrastructure in any cloud provider, such as AWS, Azure, GCP, etc. You can also use terraform to create infrastructure on-premises or in a hybrid environment. This makes terraform a very versatile tool for infrastructure automation.
+
+### What is Infrastructure as Code (IaC)?
+Managing infrastructure using code instead of manual setup
+
+### Benefits:
+- Automation
+- Version control
+- Reusability
+- Consistency
+
+### 3 important files:
+1. `main.tf` - main configuration file
+2. `variables.tf` - variables definition
+3. `outputs.tf` - outputs definition
+
+projectname/
+-	provider.tf		- provider configurations - plugin to connect to the cloud - provider "aws"
+-	version.tf		- sets the required terraform and provider version
+-	backend.tf		- this file is used to configure the backend, which determines how and where terraform stores its data (terraform.tf state in latest versions)
+-	main.tf			- contains the core resource definitions
+-	variables.tf		- declare input variables
+-	terraform.tfvars	- values are declared
+-	output.tf			- output values
+
+VVP: backend.tf 
+
+- We have created 5 VMs using terraform and 3 VMs directly launched, but backend.tf will only maintain the data related to the 5 VMs created by terraform. - This is because terraform only tracks the resources it creates and manages. 
+- The 3 VMs launched directly will not be tracked by terraform, and therefore will not be included in the state file. 
+- The state file[name of the file is backend.tf] is used by terraform to keep track of the resources it manages, and it will only include the resources that were created and managed by terraform.
+
+#### Terraform architecture or workflow:
+
+1. **terraform init** - initialize project - downloads provider plugins
+2. **terraform validate** - verify terraform script syntax
+3. **terraform fmt** - to arrange the terraform file structure
+4. **terraform plan** - Shows what will happen before execution
+5. **terraform apply** - it is used to create the resources using .tf file
+6. **terraform destroy** - it is used to delete the resources created by using .tf files
+
