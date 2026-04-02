@@ -1,0 +1,198 @@
+Variables are used to make your **Terraform code dynamic and reusable**.
+
+```bash
+variable "instance_type" {
+  default = "t2.micro"
+}
+
+resource "aws_instance" "web" {
+  instance_type = var.instance_type
+}
+```
+
+Types of variables:
+
+1. **Input Variables** -  Values passed into Terraform
+
+```bash
+variable "instance_type" {
+  description = "EC2 instance type"
+}
+```
+Pass value during run:
+
+```bash
+terraform apply -var="instance_type=t2.large"
+```
+
+2. Default Values - If no value is given → default is used
+
+```bash
+variable "instance_type" {
+  default = "t2.micro"
+}
+```
+
+- If user does NOT pass value
+- Terraform uses t2.micro
+
+3. **.tfvars File (VERY IMPORTANT)** -  Used to store variable values separately
+
+```bash
+instance_type = "t2.large"
+```
+```bash
+terraform apply
+```
+
+👉 Automatically picks values from .tfvars
+
+#### Why .tfvars is important
+
+- Clean code
+    - No hardcoding in .tf files
+- Environment-based configs
+    - dev → small instance
+    - prod → large instance
+
+#### Real world example:
+
+```bash
+#dev.tfvars
+instance_type = "t2.micro"
+````
+
+```bash
+#prod.tfvars
+instance_type = "t2.large"
+```
+
+```bash
+terraform apply -var-file="dev.tfvars" # For development
+terraform apply -var-file="prod.tfvars" # For production
+```
+
+### Variable Priority (INTERVIEW IMPORTANT)
+
+Highest → Lowest:
+
+1. CLI (-var)
+2. .tfvars
+3. Default values
+
+## Variable Functions:
+
+1. **length()** - Returns the number of elements in a list
+
+```bash
+variable "servers" {
+  default = ["web1", "web2", "web3"]
+}
+
+output "count" {
+  value = length(var.servers)
+}
+```
+output: 3
+
+or 
+
+```bash
+provider  "aws" {
+    region = "us-east-1"
+}
+
+variable "az_list" {
+    type = list(string)
+    default = ["us-east-1a", "us-east-1b", "us-east-1c"]
+  
+}
+
+output "az_count" {
+    value = length(var.az_list)
+}
+```
+output: 3
+
+
+2. **element()** - Returns a specific element from a list based on index
+
+```bash
+variable "servers" {
+  default = ["web1", "web2", "web3"]
+}
+
+output "first_server" {
+  value = element(var.servers, 0)
+}
+```
+output: web1
+
+or 
+
+```bash
+provider  "aws" {
+    region = "us-east-1"
+}
+
+variable "az_list" {
+    type = list(string)
+    default = ["us-east-1a", "us-east-1b", "us-east-1c"]
+  
+}
+
+output "az_count" {
+    value = element(var.az_list, 0)
+}
+```
+output: us-east-1a
+
+Note: Index starts at 0, so element(var.servers, 0) returns the first element of the list.
+
+3. **concat()** - Combines multiple lists into one
+
+```bash
+variable "list1" {
+  default = ["a", "b", "c"]
+}
+variable "list2" {
+  default = ["d", "e", "f"]
+}
+
+output "combined_list" {
+  value = concat(var.list1, var.list2)
+}
+```
+output: ["a", "b", "c", "d", "e", "f"]
+
+4. **join()** - Joins elements of a list into a single string with a specified separator
+
+```bash
+variable "servers" {
+  default = ["web1", "web2", "web3"]
+}
+output "server_string" {
+  value = join(", ", var.servers)
+}
+``` 
+output: "web1, web2, web3"
+
+5. **zipmap()** - Creates a map (key-value pair) from two lists
+
+```bash
+variable "keys" {
+  default = ["name", "env"]
+}
+
+variable "values" {
+  default = ["app1", "prod"]
+}
+
+output "map_output" {
+  value = zipmap(var.keys, var.values)
+}
+```
+output: 
+```
+{ "name" = "app1", "env" = "prod" }
+``

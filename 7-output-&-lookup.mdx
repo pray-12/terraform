@@ -1,0 +1,88 @@
+## Outputs & Lookup in Terraform
+
+### Outputs in Terraform
+Outputs are used to display or return values after terraform apply.
+
+### Why we use Outputs?
+- Get important info (IP, DNS, IDs)
+- Pass values between modules
+- Useful in CI/CD pipelines
+
+```bash
+output "instance_ip" {
+  value = aws_instance.web.public_ip
+}
+```
+
+### After terraform apply, you’ll see:
+
+```bash
+instance_ip = 3.110.25.10
+```
+
+Outputs in Terraform are used to extract and display useful information after infrastructure is created, such as IP addresses or resource IDs.
+
+### Lookup in Terraform
+lookup() is used to get a value from a map using a key
+
+Syntax:
+
+```bash
+lookup(map, key, default)
+```
+```bash
+variable "instance_types" {
+  default = {
+    dev  = "t2.micro"
+    prod = "t2.large"
+  }
+}
+
+output "type" {
+  value = lookup(var.instance_types, "dev", "t2.nano")
+}
+```
+
+```bash
+#output
+
+t2.micro
+```
+
+### What if key is not found?
+
+```bash
+lookup(var.instance_types, "test", "t2.nano")
+```
+```bash
+t2.nano
+```
+
+### Why lookup is important
+- Safe access to maps
+- Avoid errors
+- Handle missing values
+
+### Real world example
+
+```bash
+variable "env" {
+  default = "prod"
+}
+
+variable "instance_types" {
+  default = {
+    dev  = "t2.micro"
+    prod = "t2.large"
+  }
+}
+
+resource "aws_instance" "web" {
+  instance_type = lookup(var.instance_types, var.env, "t2.micro")
+}
+```
+In this example, we use lookup to get the instance type based on the environment variable. If env is "prod", it will use "t2.large". If env is "dev", it will use "t2.micro". If env is something else, it will default to "t2.micro".
+## One-line memory trick
+
+- Output = show value
+- lookup = get value

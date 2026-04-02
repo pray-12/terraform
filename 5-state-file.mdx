@@ -1,0 +1,57 @@
+It is a file where **Terraform stores the current state of all resources it created**
+
+## Main Purpose:
+
+To help Terraform know what already exists
+
+### Without state file:
+
+Terraform does NOT know:
+
+- What resources exist ❌
+- What needs to change ❌
+- What to delete ❌
+🧠 With state file:
+
+### Terraform knows:
+
+- Existing infra ✅
+- Required changes ✅
+- Dependencies ✅
+
+Example:
+
+```bash
+resource "aws_instance" "web" {
+  instance_type = "t2.micro"
+}
+```
+change to
+
+```bash
+instance_type = "t2.large"
+```
+### Terraform:
+
+- Checks state file
+- Sees existing instance
+- Updates only that field
+
+## Problems with state file:
+- If state file is lost → Terraform loses track of resources and security breaches can occur
+
+    **Solution:** Use remote state storage (e.g., S3, Terraform Cloud) and enable versioning
+- If state file is corrupted → Terraform may not work correctly and can lead to errors in managing infrastructure
+- Team conflict - If multiple team members work on the same state file without proper locking → It can lead to conflicts and inconsistencies in the infrastructure management
+
+    **Solution:** Use state locking mechanisms (e.g., DynamoDB for S3 backend) to prevent concurrent modifications
+
+“The Terraform state file stores the current state of infrastructure so Terraform can track resources and perform updates efficiently. However, it has challenges such as storing sensitive data and causing conflicts when multiple users modify it simultaneously. These issues are solved using remote backends and state locking.”
+
+1. What happens if state file is deleted?
+
+- Terraform loses tracking
+- May recreate resources
+
+2. Can we share local state file?
+    No → use remote backend [s3 bucket]
