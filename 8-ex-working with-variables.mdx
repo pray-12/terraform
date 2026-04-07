@@ -1,0 +1,152 @@
+### Creating EC2 VM using variables concept
+
+```bash
+terraform-ec2/
+│
+├── main.tf
+├── variables.tf
+├── outputs.tf
+└── terraform.tfvars (optional)
+```
+
+1. main.tf
+
+```bash
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "ec2_instance" {
+  ami           = var.ami_id
+  instance_type = var.instance_type
+
+  tags = {
+    Name = var.instance_name
+  }
+}
+```
+
+2️. variables.tf
+
+```bash
+variable "ami_id" {
+  description = "AMI ID to use for the EC2 instance"
+  type        = string
+  # Amazon Linux 2 AMI for us-east-1 (you can change this)
+  default     = "ami-0c02fb55956c7d316"
+}
+
+variable "instance_type" {
+  description = "Type of EC2 instance to launch"
+  type        = string
+  default     = "t2.micro"
+}
+
+variable "instance_name" {
+  description = "Name tag for the EC2 instance"
+  type        = string
+  default     = "Preethy-EC2"
+}
+
+3️. outputs.tf
+
+output "instance_id" {
+  value = aws_instance.ec2_instance.id
+}
+
+output "public_ip" {
+  value = aws_instance.ec2_instance.public_ip
+}
+```
+
+Check [output  block](07-output-&-lookup.mdx) for more details about output block.
+
+Run the following commands to create the EC2 instance:
+
+```bash
+terraform init
+terraform plan
+terraform apply -auto-approve
+```
+when we run `terraform apply`, it will create `terraform.tfstate` file which contains the state of the resources created by terraform. It will also show the output values defined in `outputs.tf` file, such as instance_id and public_ip.
+
+**Note:** when we define variables the block id will not appear  when we run `teraform state list` command. It will only show the resource block id which is `aws_instance.ec2_instance` in this case. The variable block id will not be shown in the state file as it is not a resource that is created by terraform, it is just a placeholder for the values that we can use in our resource blocks.
+
+I don't want to create the infra using the default values mentioned in variables.tf file
+
+To provide custom values or update the existing values, we have 2 options;
+
+
+1. Providing the values in the runtime using `-var` flag
+    ```bash
+    terraform apply -var="instance_type=t2.small" -var="instance_name=Custom-EC2" -auto-approve
+    ```
+2. Providing the values in a separate file which is known as "terraform.tfvars"
+```bash
+#terraform.tfvars
+instance_type = "t2.small"
+instance_name = "Custom-EC2"
+```
+```bash
+terraform apply -var-file="terraform.tfvars" -auto-approve
+```
+		
+
+When we create the infra using the above 2 options, **terraform has updated the existing infra** and existing resources will be modified.
+
+terraform will stop the existing instance and then restart it with the new instance type. This is because changing the instance type requires stopping and starting the instance.
+
+To create a new infra without modifying the existing infra, we will use "for_each".
+
+check [for_each](09-count-%26-for-each.mdx) for more details about for_each and count.
+
+
+✅ Updated Terraform configuration
+main.tf
+```bash
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "ec2_instance" {
+  for_each = toset([var.instance_type])	 # for_each allows creating multiple resources dynamically. 
+									# Here, we convert the list [var.instance_type] into a set.
+  									# This means Terraform will create one EC2 instance per instance type.
+  ami           = var.ami_id
+  instance_type = each.key
+
+  tags = {
+    Name = "${var.instance_name}-${each.key}"	# "each.key" refers to the key from the for_each loop. each key is instance_type [t2.micro] in this case. This allows us to create unique tags for each instance based on its type. [Kastro-EC2-t2.micro]
+  }
+}
+
+variables.tf
+variable "ami_id" {
+  description = "AMI ID for EC2"
+  type        = string
+  default     = "ami-0c02fb55956c7d316" # Amazon Linux 2
+}
+
+variable "instance_type" {
+  description = "Type of EC2 instance to launch"
+  type        = string
+  default     = "t2.micro"
+}
+
+variable "instance_name" {
+  description = "Base name for EC2 instance"
+  type        = string
+  default     = "Kastro-EC2"
+}
+
+outputs.tf
+output "instance_public_ips" {
+  value = { for k, v in aws_instance.ec2_instance : k => v.public_ip }	# We use a for expression to build a map of instance_type => public_ip for all instances created by the for_each loop. 
+}
+
+output "instance_ids" {
+  value = { for k, v in aws_instance.ec2_instance : k => v.id } # Similarly, this creates a map of instance_type => instance_id
+}
+```
+In this updated configuration, we use `for_each` to create a new EC2 instance for each instance type specified in the `instance_type` variable. The `each.key` is used to reference the current instance type in the loop, allowing us to create unique tags and outputs for each instance. This way, we can create multiple instances without modifying existing ones, and we can easily track them using their instance types.
+

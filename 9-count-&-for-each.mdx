@@ -1,0 +1,66 @@
+## Count 
+
+**count** is used to create multiple identical resources
+
+Ex: 
+```bash
+resource "aws_instance" "web" {
+  count         = 2
+  ami           = "ami-123"
+  instance_type = "t2.micro"
+}
+```
+
+Creates 2 EC2 instances with the same configuration. The instances can be accessed using an index, for example: `aws_instance.web[0]` and `aws_instance.web[1]`.
+
+## Use case:
+- Same configuration
+- Fixed number of resources
+
+### count.index
+
+```bash
+tags = {
+  Name = "server-${count.index}"
+}
+```
+This will create tags with names "server-0", "server-1", etc. for each instance created by the count.
+
+### Problem with count
+
+👉 If list changes → resources may shift ❌
+
+Example:
+
+Remove 1 item → Terraform may destroy wrong resource
+
+## For_each
+
+`for_each` is used to create multiple resources with unique values. It creates new resources everytime the configuration changes, without affecting existing resources.
+
+Ex:
+
+```bash
+resource "aws_instance" "web" {
+  for_each = toset(["dev", "prod"]) #toset is used to convert list to set 
+
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = each.key
+  }
+}
+```
+
+It creates a `dev` instance and a `prod` instance
+
+### Use count when:
+- Same config
+- Fixed number
+
+### Use for_each when:
+- Different configs
+- Environment-based
+- Production setup
+
+`Count` is used to create multiple identical resources using an index, while for_each is used to create resources based on a set or map, allowing each resource to have unique values. `for_each` is preferred in production because it is more stable and readable.
