@@ -1,0 +1,97 @@
+
+## Example:
+
+```bash
+provider "aws" {
+  region = "ap-south-1"  # Mumbai region
+}
+
+resource "aws_s3_bucket" "my_bucket" {
+  bucket = "my-unique-bucket-name-12345"
+
+  tags = {
+    Name        = "MyBucket"
+    Environment = "Dev"
+  }
+}
+```
+
+## Important Points
+
+- Bucket name must be `globally unique` (across all AWS users).
+- Use lowercase letters, 5 to 63 characters,  numbers, and hyphens only.
+- No spaces or uppercase letters.
+
+```bash
+terraform init
+terraform plan
+terraform apply
+``` 
+
+## Optional: Enable Versioning
+
+```bash
+resource "aws_s3_bucket_versioning" "versioning" {
+  bucket = aws_s3_bucket.my_bucket.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+```
+
+## Optional: Make it Private (recommended)
+
+```bash
+resource "aws_s3_bucket_public_access_block" "block_public" {
+  bucket = aws_s3_bucket.my_bucket.id
+
+  block_public_acls   = true
+  block_public_policy = true
+  ignore_public_acls  = true
+  restrict_public_buckets = true
+}
+```
+
+### In this i will use different files instead of creating everything in a single file i.e main.tf
+
+vi provider.tf ---->
+
+```bash
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "5.90.1"
+    }
+  }
+}
+
+provider "aws" {
+  region = "ap-south-1"
+}
+```
+
+vi terraform.tfvars ---> In tfvar we will just assign a variable.
+
+```bash
+mybucket = "tf-example-kastro--s3-bucket"
+```
+
+vi variables.tf ----> In tfvar we have assigned a variable, but for that variable we will declare the values in variables.tf file
+
+```bash
+variable "mybucket" {
+  type        = string
+  description = "This is my Devops test bucket from TF"
+  default     = ""	#Here i dint kept any value because we have kept the values in tfvars file
+}
+```
+
+vi main.tf ---->
+
+```bash
+resource "aws_s3_bucket" "example" {
+  bucket = var.mybucket #Here am calling the variable defined in variables.tf file. The variable name is "mybucket"
+}
+```

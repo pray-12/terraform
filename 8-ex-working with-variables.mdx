@@ -148,5 +148,152 @@ output "instance_ids" {
   value = { for k, v in aws_instance.ec2_instance : k => v.id } # Similarly, this creates a map of instance_type => instance_id
 }
 ```
+
 In this updated configuration, we use `for_each` to create a new EC2 instance for each instance type specified in the `instance_type` variable. The `each.key` is used to reference the current instance type in the loop, allowing us to create unique tags and outputs for each instance. This way, we can create multiple instances without modifying existing ones, and we can easily track them using their instance types.
 
+Run the following commands to create the EC2 instances:
+
+```bash
+terraform init
+terraform plan
+terraform apply -auto-approve
+```
+
+Now it will create a EC2 instance with name "Kastro-EC2-t2.micro".
+
+Now run the command to change the instance type to t2.small and create a new instance without modifying the existing instance.
+
+```bash
+terraform apply -var="instance_type=t2.small" -auto-approve
+```
+vvp: This will create a new EC2 instance with name "Kastro-EC2-t2.small"but it will destroy the existing instance.To avaoid this we can use `modules` and create separate modules for each instance type. Check `modules` for more details about modules.
+
+Without using for_each, if we change the instance type in the variable and apply the changes, it will modify the existing instance instead of creating a new one. This is because Terraform treats the resource as a single entity and updates it with the new configuration. By using for_each, we can create multiple instances with different configurations without affecting each other.
+
+Without deleteing the existing instance, we can create a new instance with a different name by creating the standard directory structure.
+
+```bash
+terraform/
+│
+├── instance1/
+│   ├── main.tf
+│
+├── instance2/
+│   ├── main.tf
+│
+└── provider.tf
+```
+
+
+#### Declaring variables and resources in the main.tf file [vvp]
+
+vi main.tf ---->
+
+```bash
+provider "aws" {
+  region = "ap-south-1"
+}
+
+#below i have described all the variables required
+variable "instance_count" {
+  description = "this is the count of instances"
+  type        = number
+  default     = 3
+}
+
+variable "instance_ami" {
+  description = "*" 
+  type        = string
+  default     = "ami-08fe5144e4659a3b3"
+}
+
+variable "instance_type" {
+  description = "*"
+  type        = string
+  default     = "t2.micro" 
+}
+
+variable "instance_name" {
+  description = "*"
+  type        = string
+  default     = "TF-Server"
+}
+```
+
+vvp: to call a specific variable in the resource block we can use `var.<variable_name>`
+
+```bash
+#From here we will write the tf code to create the resources using the variables declared above
+resource "aws_instance" "myinstance" {
+  count = var.instance_count
+  ami = var.instance_ami
+  instance_type = var.instance_type
+  tags = {
+    Name = var.instance_name
+  }
+}
+```
+
+## Declaring variables in the variables.tf and resources in main.tf file
+
+So far we have kept variables and resource info kept in the same file i.e main.tf.
+
+Lets keep variables in a separate file and resource information in a separate file. 
+
+From the main.tf I can call variables.tf file to create the resources.
+
+vi variables.tf ---->
+
+```bash
+provider "aws" {
+  region = "ap-south-1"
+}
+
+#below i have described all the variables required
+variable "instance_count" {
+  description = "this is the count of instances"
+  type        = number
+  default     = 3
+}
+
+variable "instance_ami" {
+  description = "*" 
+  type        = string
+  default     = "ami-08fe5144e4659a3b3"
+}
+
+variable "instance_type" {
+  description = "*"
+  type        = string
+  default     = "t2.micro" 
+}
+
+variable "instance_name" {
+  description = "*"
+  type        = string
+  default     = "TF Server"
+}
+```
+
+```bash
+terraform fmt
+terraform validate
+terraform plan
+``` 
+
+vi main.tf ----> 
+
+```bash
+provider "aws" {
+  region = "ap-south-1"
+}
+
+resource "aws_instance" "myinstance" {
+  count = var.instance_count
+  ami = var.instance_ami
+  instance_type = var.instance_type
+  tags = {
+    Name = var.instance_name
+  }
+}
+```

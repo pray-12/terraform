@@ -1,0 +1,282 @@
+A **module is a reusable block of Terraform code**.
+
+**Analogy:**
+
+- Terraform Module = Ansible Role
+
+### Why Modules are IMPORTANT
+
+**Reusability**
+ - Write once, use everywhere
+
+**Clean Code**
+ - Keeps main file simple
+
+**Team Collaboration**
+ - Teams share modules
+
+**Standardization**
+ - Same infra pattern across projects
+
+### Common Mistakes
+
+**Hardcoding inside module**
+- Always use variables
+
+**Not using outputs**
+- Makes module useless outside
+
+**Too complex modules**
+- Keep simple & reusable
+
+Note: Modules in Terraform are reusable components that allow us to organize and reuse infrastructure code. They help in maintaining clean, scalable, and modular configurations, similar to roles in Ansible.
+
+### Real DevOps Example
+
+👉 You create a module for:
+
+- EC2
+- VPC
+- Security group
+
+👉 Then reuse:
+
+```bash
+terraform-modules-project/
+│
+├── modules/
+│   ├── ec2_instance/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   └── s3_bucket/
+│       ├── main.tf
+│       ├── variables.tf
+│       └── outputs.tf
+│
+├── environments/
+│   ├── dev/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── terraform.tfvars
+│   └── prod/
+│       ├── main.tf
+│       ├── variables.tf
+│       └── terraform.tfvars
+│
+└── provider.tf
+```
+
+#### Step-by-Step Approach
+
+- We’ll do this in 3 stages:
+- Create reusable modules (for EC2 and S3).
+- Call these modules separately in Dev and Prod folders.
+- Initialize and apply Terraform for each environment.
+
+1. Module 1: EC2 Instance
+
+📁 modules/ec2_instance/main.tf
+
+```bash
+resource "aws_instance" "this" {
+  ami           = var.ami_id
+  instance_type = var.instance_type
+  key_name      = var.key_name
+
+  tags = {
+    Name        = var.instance_name
+    Environment = var.environment
+  }
+}
+```
+
+📁 modules/ec2_instance/variables.tf
+
+```bash
+variable "ami_id" {}
+variable "instance_type" {}
+variable "key_name" {}
+variable "instance_name" {}
+variable "environment" {}
+```
+
+📁 modules/ec2_instance/outputs.tf
+
+```bash
+output "instance_id" {
+  value = aws_instance.this.id
+}
+
+output "public_ip" {
+  value = aws_instance.this.public_ip
+}
+```
+
+2. Module 2: S3 Bucket
+
+```bash
+📁 modules/s3_bucket/main.tf
+resource "aws_s3_bucket" "this" {
+  bucket = var.bucket_name
+  tags = {
+    Environment = var.environment
+  }
+}
+```
+
+📁 modules/s3_bucket/variables.tf
+
+```bash
+variable "bucket_name" {}
+variable "environment" {}
+```
+
+📁 modules/s3_bucket/outputs.tf
+
+```bash
+output "bucket_arn" {
+  value = aws_s3_bucket.this.arn
+}
+
+Provider Configuration
+📁 provider.tf
+(Used by both dev and prod environments)
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+
+  required_version = ">= 1.6.0"
+}
+
+provider "aws" {
+  region = var.region
+}
+
+3. DEV Environment
+
+📁 environments/dev/main.tf
+
+```bash
+module "dev_ec2" {
+  source        = "../../modules/ec2_instance"
+  ami_id        = var.ami_id
+  instance_type = var.instance_type
+  key_name      = var.key_name
+  instance_name = "dev-ec2-instance"
+  environment   = "dev"
+}
+
+module "dev_s3" {
+  source       = "../../modules/s3_bucket"
+  bucket_name  = "mycompany-dev-bucket"
+  environment  = "dev"
+}
+
+output "dev_instance_public_ip" {
+  value = module.dev_ec2.public_ip
+}
+
+output "dev_s3_bucket_arn" {
+  value = module.dev_s3.bucket_arn
+}
+```
+
+📁 environments/dev/variables.tf
+
+```bash
+variable "region" {}
+variable "ami_id" {}
+variable "instance_type" {}
+variable "key_name" {}
+```
+
+
+📁 environments/dev/terraform.tfvars
+
+```bash
+region         = "us-east-1"
+ami_id         = "ami-0abcdef1234567890"
+instance_type  = "t2.micro"
+key_name       = "my-dev-key"
+```
+
+3. PROD Environment
+
+📁 environments/prod/main.tf
+
+```bash
+module "prod_ec2" {
+  source        = "../../modules/ec2_instance"
+  ami_id        = var.ami_id
+  instance_type = var.instance_type
+  key_name      = var.key_name
+  instance_name = "prod-ec2-instance"
+  environment   = "prod"
+}
+
+module "prod_s3" {
+  source       = "../../modules/s3_bucket"
+  bucket_name  = "mycompany-prod-bucket"
+  environment  = "prod"
+}
+
+output "prod_instance_public_ip" {
+  value = module.prod_ec2.public_ip
+}
+
+output "prod_s3_bucket_arn" {
+  value = module.prod_s3.bucket_arn
+}
+```
+
+📁 environments/prod/variables.tf
+
+```bash
+variable "region" {}
+variable "ami_id" {}
+variable "instance_type" {}
+variable "key_name" {}
+```
+
+📁 environments/prod/terraform.tfvars
+```bash
+region         = "us-east-1"
+ami_id         = "ami-0abcdef1234567890"
+instance_type  = "t3.medium"
+key_name       = "my-prod-key"
+```
+
+4. Commands to Execute
+
+🖥️ Step 1: Navigate to Dev environment
+cd environments/dev
+
+```bash
+terraform init
+terraform plan
+terraform apply -auto-approve 
+```
+
+✅ This will create:
+- EC2 instance → t2.micro
+- S3 bucket → mycompany-dev-bucket
+
+🖥️ Step 2: Navigate to Prod environment
+
+```bash
+cd ../prod
+terraform init
+terraform plan
+terraform apply -auto-approve
+```
+
+✅ This will create:
+- EC2 instance → t3.medium
+- S3 bucket → mycompany-prod-bucket
+
+
