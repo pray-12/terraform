@@ -1,6 +1,12 @@
+### VVP:
+
 ## What is a Remote Backend?
 
 A **remote backend** is used to store the Terraform state file (`terraform.tfstate`) in a remote location instead of locally.
+
+### What do you mean by state locking?
+
+State locking means preventing multiple users from updating the state file at the same time. if one person is applying the changes, other person will not be able to apply the changes until the first person completes the changes in the aws console.
 
 ### Why do we need it?
 **Problem with local state:**
@@ -9,6 +15,7 @@ A **remote backend** is used to store the Terraform state file (`terraform.tfsta
 - Not shared with team ❌
 - Risk of conflicts ❌
 - Not secure ❌
+- If multiple people are working with same state file, If two people apply the same command `terraform apply`, terraform gets confused &terraform will execute the latest command. Old terraform apply command will get overridded.
 
 ## Solution:
 
@@ -17,8 +24,9 @@ A **remote backend** is used to store the Terraform state file (`terraform.tfsta
 ## S3 + DynamoDB (MOST COMMON SETUP)
 
 ### Important Requirements
-- S3 bucket must exist
-- DynamoDB table must exist
+
+- S3 bucket must exist [enable versioning]
+- DynamoDB table must exist [A table in DynamoDB is a place where data is stored in key-value format.] [partition key is required- LockID ,tablesettings - DynamoDB Standard-IA[1availablity zone]]
 
 DynamoDB Table:
 
@@ -35,17 +43,41 @@ terraform.tfstate
 ```
 
 ```bash
+provider "aws" {
+  region = "ap-south-1"
+}
+
 terraform {
   backend "s3" {
     bucket = "my-terraform-state-bucket"
     key    = "project/terraform.tfstate"
     region = "ap-south-1"
+    encrypt = true
+    dynamodb_table = "terraform-lock" # DynamoDB table name
+  }
+}
+
+resource "aws_instance" "terraform-lock" {
+  ami = "ami-123456"
+  instance_type = "t2.micro"
+  tags = {
+    Name = "terraform-lock"
   }
 }
 ```
+
+```bash
+terraform init
+terraform plan
+terraform apply
+```
+
 #### What this does:
+
 - Stores state in S3
 - Accessible by team
+- Prevents multiple users from updating state at same time
+- Lock state file in DynamoDB
 
 2. DynamoDB → Lock State File
 

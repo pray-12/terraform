@@ -1,0 +1,200 @@
+# Terraform Interview Questions & Answers
+
+
+## 🟢 BASIC (1–15)
+
+### 1. What is Terraform?
+Terraform is an Infrastructure as Code (IaC) tool used to provision and manage infrastructure using declarative configuration files.
+
+
+### 2. What is IaC?
+Infrastructure as Code means managing infrastructure using code instead of manual processes.
+
+
+### 3. What are providers?
+Providers are plugins that allow Terraform to interact with platforms like AWS, Azure, etc.
+
+
+### 4. What are resources?
+Resources are the actual infrastructure components like EC2, S3, VPC.
+
+
+### 5. Explain Terraform workflow
+`init → plan → apply → destroy`
+
+
+### 6. What is terraform init?
+Initializes the project and downloads providers.
+
+
+### 7. What is terraform plan?
+Shows what changes will be made before execution.
+
+
+### 8. What is terraform apply?
+Creates or updates infrastructure.
+
+
+### 9. What is terraform destroy?
+Deletes all managed resources.
+
+
+### 10. What is a state file?
+Stores current infrastructure details so Terraform can track changes.
+
+
+### 11. Why is state file important?
+Without it, Terraform cannot track resources or changes.
+
+
+### 12. What are variables?
+Used to make Terraform code dynamic and reusable.
+
+
+### 13. What is .tfvars file?
+Stores variable values separately.
+
+
+### 14. What are outputs?
+Used to display values after execution.
+
+
+### 15. What is lookup()?
+Used to fetch values from a map.
+
+
+## 🟡 INTERMEDIATE (16–30)
+
+### 16. What is a module?
+Reusable Terraform configuration block.
+
+
+### 17. What is remote backend?
+Stores state file remotely (like S3).
+
+
+### 18. Why use S3 and DynamoDB together?
+S3 stores state, DynamoDB locks it.
+
+
+### 19. What is state locking?
+Prevents multiple users modifying state simultaneously.
+
+
+### 20. What is count?
+Used to create multiple identical resources.
+
+
+### 21. What is for_each?
+Used to create resources with unique values.
+
+
+### 22. Difference between count and for_each?
+- count → index-based  
+- for_each → key-based (more stable)
+
+
+### 23. What are data sources?
+Used to fetch existing resources.
+
+
+### 24. What is lifecycle block?
+Controls resource behavior (create, destroy, update).
+
+
+### 25. What is prevent_destroy?
+Prevents accidental deletion.
+
+
+### 26. What is create_before_destroy?
+Ensures zero downtime by creating new resource first.
+
+
+### 27. What is ignore_changes?
+Ignores updates to specific attributes.
+
+
+### 28. What are provisioners?
+Used to run scripts after resource creation.
+
+
+### 29. Why are provisioners not recommended?
+- Not idempotent  
+- Hard to manage  
+- Mix infrastructure and configuration  
+
+
+### 30. What is depends_on?
+Used to define explicit dependency between resources.
+
+
+## 🔴 ADVANCED / REAL-WORLD (31–40)
+
+### 31. What happens if terraform.tfstate is deleted?
+Terraform loses track and may recreate resources.
+
+
+### 32. How do you secure Terraform state file?
+Use S3 encryption, IAM policies, DynamoDB locking, and avoid committing to Git.
+
+
+### 33. What is implicit dependency?
+Automatically detected via resource references.
+
+
+### 34. When do you use explicit dependency?
+When Terraform cannot detect dependency automatically.
+
+
+### 35. How do you handle multiple environments?
+Using workspaces or separate backend configurations.
+
+
+### 36. What is Terraform import?
+Used to bring existing resources under Terraform management.
+
+
+### 37. What is alias in provider?
+Used to configure multiple providers (e.g., multi-region).
+
+
+### 38. How do you fetch latest AMI dynamically?
+Using data source (`aws_ami`).
+
+
+### 39. Why is Terraform declarative?
+You define the desired state, not the steps.
+
+
+### 40. How do you use Terraform and Ansible together?
+Terraform provisions infrastructure, and Ansible configures the servers using outputs like IP addresses.
+
+
+## 🔥 BONUS TRICKY QUESTIONS
+
+### Why not use provisioners instead of Ansible?
+Because they are not scalable, not idempotent, and hard to debug.
+
+
+### Can Terraform work without state file?
+No.
+
+
+### Which is better: count or for_each?
+for_each is preferred due to stability.
+
+
+### Can multiple people run Terraform at same time?
+Yes, but only safely with state locking (DynamoDB).
+
+
+## 🎯 FINAL TIP
+
+If you understand:
+- State file  
+- Backend  
+- Modules  
+- count vs for_each  
+- Terraform + Ansible  
+
+You are interview-ready for most roles.

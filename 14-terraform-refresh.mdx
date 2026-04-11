@@ -1,0 +1,53 @@
+`terraform refresh` is a command used to update your Terraform state file with the real-world infrastructure.
+
+### Simple Meaning
+
+It checks your actual resources (in AWS, Azure, etc.) and syncs the state file with their current values.
+
+If we have made any manual changes in the aws console it will change the statefile to that perticular changes. 
+
+Example:
+
+- You created an EC2 instance using Terraform
+- Later, someone changed its tag manually in AWS console.
+- Terraform state still has old value ❌
+
+👉 terraform refresh will:
+
+- Read the real resource
+- Update state file ✅
+
+```bash
+terraform refresh
+```
+
+**Important Notes**
+
+- It does NOT change infrastructure
+- It only updates the state file
+- Safe to run anytime
+- happens in multiregion resource creation only.
+
+terraform refresh is **deprecated** in newer Terraform versions.
+
+Instead, use:
+
+```bash
+terraform plan
+```
+
+or
+```bash
+terraform apply
+```
+
+These automatically refresh the state before execution.
+
+Example:
+
+- In main.tf tag name is `EC-2-instance`.
+- In aws console change the name to `terafform test`.
+- When we run `terraform refresh` it will keep the name as `terraform test` only.
+
+
+

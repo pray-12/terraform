@@ -1,0 +1,172 @@
+A **workspace** allows you to manage **multiple environments** (dev, test, prod) using the same Terraform code.
+
+All the workspaces are stored in the same state file `terraform.tfstate.d` file. This file will be created in the root directory of the project when we work with workspaces.
+
+limits:
+
+- Cannot lock state file in DynamoDB for multiple workspaces.
+- Cannot use the same state file for multiple workspaces.
+
+list of workspaces:
+```bash
+terraform workspace list
+```
+
+output:
+
+```bash
+ * default
+
+```
+
+### Create New Workspace
+
+```bash
+terraform workspace new dev
+terraform workspace new prod
+```
+### Show Current Workspace
+
+```bash 
+terraform workspace show
+```
+
+### Switch to a workspace
+
+```bash
+terraform workspace select dev
+```
+
+### List Workspaces
+
+```bash
+terraform workspace list
+```
+
+### Delete a workspace
+
+```bash
+terraform workspace delete dev
+terraform workspace delete prod
+```
+**Note:** Cannot delete the current workspace or default workspace.
+### How it works internally
+
+👉 Each workspace has its own separate state file
+
+```bash
+default → terraform.tfstate
+dev     → terraform.tfstate.d/dev/
+prod    → terraform.tfstate.d/prod/
+```
+
+### How to use workspaces?
+
+1.✅ Separate environments
+- dev
+- test
+- prod
+2.✅ Same codebase
+- No duplication
+3.✅ Isolation
+- Each env has its own state
+
+
+### Practical Example
+
+```bash
+resource "aws_instance" "web" {
+  instance_type = terraform.workspace == "prod" ? "t2.large" : "t2.micro"
+}
+```
+Behavior:
+- dev → t2.micro
+- prod → t2.large
+
+### Real DevOps Usage
+
+👉 You deploy:
+
+```bash
+terraform workspace select dev
+terraform apply
+```
+
+👉 Then:
+
+```bash
+terraform workspace select prod
+terraform apply
+```
+
+“Terraform workspaces allow us to manage multiple environments using the same configuration by maintaining separate state files for each workspace, such as dev, test, and production.”
+
+| Feature  | Workspace             | tfvars          |
+| -------- | --------------------- | --------------- |
+| Purpose  | Separate state        | Separate values |
+| Use case | Environment isolation | Config changes  |
+
+“In real-world projects, workspaces are useful for simple setups, but for larger systems we prefer separate backends or directories for better control.”
+
+Note: To create the resources in specific worspaces, we will use "locals" block.
+
+```bash
+provider "aws" {
+    region = "ap-south-1"
+}
+
+locals {
+    instance_types = {
+        dev = "t2.micro"
+        test = "t2.medium"
+        prod = "t2.large"
+    }
+}
+
+resource "aws_instance" "web" {
+    ami = "ami-123456"
+    instance_type = local.instance_types[terraform.workspace]
+    tags = {
+        Name = "${terraform.workspace}-server"
+    }
+}
+
+output "active_workspace" {
+    value = terraform.workspace # This will show the active workspace
+}
+
+output "selected_instance_type" {
+    value = local.instance_types[terraform.workspace] # This will show the instance type for the active workspace
+}
+```
+
+Behavior:
+
+- It will create a t2.micro instance in dev workspace and a t2.large instance in prod workspace and a t2.medium instance in test workspace.
+
+### Real DevOps Usage
+
+```bash
+terraform workspace select dev
+terraform apply
+```
+
+```bash
+terraform workspace select prod
+terraform apply
+```
+```bash
+terraform workspace select test
+terraform apply
+```
+```bash
+terraform workspace list
+```
+output:
+
+```bash
+ * default
+ * dev
+ * prod
+ * test
+```

@@ -1,0 +1,35 @@
+## What is terraform import?
+
+`terraform import` is used to bring existing (already created) infrastructure into Terraform management.
+
+**vvp**
+
+- ✅ Updates state file only
+- ❌ Does NOT create .tf configuration
+
+**Drawbacks:**
+
+1. Terraform import can do only one task at a time.
+
+```bash
+terraform import <resource_type>.<resource_name> <resource_id>
+```
+
+**Example**
+
+```bash
+terraform import aws_instance.my_ec2 i-1234567890abcdef0
+```
+- `aws_instance.my_ec2` → Terraform resource block
+- `i-1234567890abcdef0` → actual EC2 instance ID
+
+### Typical Workflow
+- Write basic resource block
+- Run import
+- Run terraform plan
+- Fix differences until no changes
+
+### Important Notes
+- Import doesn’t validate full configuration
+- If config doesn’t match → Terraform may try to change resource
+- Always run terraform plan after import

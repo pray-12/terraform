@@ -1,0 +1,150 @@
+## Why do we need to secure it?
+👉 Because state file contains:
+- Passwords ❗
+- API keys ❗
+- Private IPs ❗
+- Resource details ❗
+
+Example:
+
+```bash
+{
+  "db_password": "admin123"
+}
+```
+If leaked → serious security risk ❌
+
+To secure Terraform state files, I use remote backends like S3 with encryption enabled, restrict access using IAM policies, enable versioning for recovery, use DynamoDB for state locking, and avoid storing state files in version control systems. Additionally, sensitive variables are marked to prevent exposure.
+
+1. Create a s3 bucket with enabling versioning.
+
+2. main.tf
+
+```bash
+provider "aws"{
+region = "us-east-1"
+}
+terraform {
+  backend "s3" {
+    bucket  = "my-bucket-name"
+    key     = "prod/terraform.tfstate"
+    region  = "ap-south-1"
+    encrypt = true
+  }
+}
+
+resource "aws_instance" "myfrstinst" {
+    ami = "ami-123456" 
+    instance_type = "t2.micro"
+    tags = {
+    Name = "backend-example-1"
+    }
+}
+
+resource "aws_instance" "mysecondinst" {
+    ami = "ami-123456" 
+    instance_type = "t2.micro"
+    tags = {
+    Name = "backend-example-2"
+    }
+}
+output "instance_ids" {
+    value = [aws_instance.myfrstinst.tags.Name, aws_instance.mysecondinst.tags.Name]
+}
+```
+
+```bash
+terraform init
+terrafom plan
+terraform apply --auto-approve
+```
+In local `terraform.tfstate` is not created.In remote yes.
+
+### Migrating a statefile
+```bash
+terraform {
+  backend "s3" {
+    bucket  = "my-bucket-name"
+    key     = "prod/terraform.tfstate"
+    region  = "ap-south-1"
+    encrypt = true
+  }
+}
+``` 
+When other teamates want to work they should have this block. 
+
+Scenario: If i don't write the backend code it will create in local but we need to get the changes from remote state file.
+
+When we will run terraform init it will ask us to migrate the old data with the command 
+
+```bash
+terraform init -migrate-state
+```
+### Securing a statefile
+
+#### Ways to Secure Terraform State File
+
+1. Use Remote Backend (MUST)
+
+Never store state locally in production ❌
+
+**Use:**
+- S3 (AWS)
+- Azure Blob
+- GCS (GCP)
+
+2. Enable Encryption (VERY IMPORTANT)
+
+S3 encryption:
+
+```bash
+terraform {
+  backend "s3" {
+    bucket  = "my-bucket"
+    key     = "terraform.tfstate"
+    region  = "ap-south-1"
+    encrypt = true
+  }
+}
+```
+
+**What it does:**
+
+Encrypts state file at rest 🔒
+
+3. Use IAM Roles & Policies
+
+👉 Restrict access to state file
+
+✅ Example:
+
+- Only DevOps team can access
+- No public access
+
+❌ Avoid:
+
+- Hardcoding AWS credentials
+
+4. Enable State Locking
+
+👉 Using DynamoDB
+
+Why?
+
+Prevent multiple users modifying state
+
+5. Use Versioning (IMPORTANT)
+
+👉 Enable S3 versioning
+
+Benefit:
+- Recover old state file
+- Track changes
+
+7. Avoid Committing State to Git
+
+👉 NEVER do this ❌
+
+Add to .gitignore:
+- *.tfstate
+- *.tfstate.backup

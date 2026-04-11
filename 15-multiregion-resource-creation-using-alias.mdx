@@ -1,0 +1,75 @@
+## 1. Multi-Region Resource Creation (Using alias)
+
+This is within the **same cloud provider** (like AWS), but in **different regions**.
+
+### What is alias?
+a nickname for a provider configuration
+
+It helps you use the same provider (like AWS) with different settings (like different regions).
+
+### Concept
+
+You define **multiple provider blocks** with different regions using alias.
+
+Example:
+
+```bash
+provider "aws" {
+  region = "us-east-1"
+}
+
+provider "aws" {
+  alias  = "west"
+  region = "us-west-2"
+}
+
+# Resource in default region (us-east-1)
+resource "aws_instance" "east_instance" {
+  ami           = "ami-123456"
+  instance_type = "t2.micro"
+}
+
+# Resource in us-west-2
+resource "aws_instance" "west_instance" {
+  provider      = aws.west
+  ami           = "ami-123456"
+  instance_type = "t2.micro"
+}
+```
+### Key Points
+- Same provider → aws
+- Multiple regions → use alias
+- Use provider = aws.alias_name in resource
+
+## Multi-Cloud (AWS + Azure + GCP)
+
+You define multiple providers, each for a different cloud.
+
+```bash
+# AWS
+provider "aws" {
+  region = "us-east-1"
+}
+
+# Azure
+provider "azurerm" {
+  features {}
+}
+
+# AWS resource
+resource "aws_instance" "example" {
+  ami           = "ami-123456"
+  instance_type = "t2.micro"
+}
+
+# Azure resource
+resource "azurerm_resource_group" "example" {
+  name     = "rg-demo"
+  location = "East US"
+}
+```
+
+### Key Points
+- Different providers → aws, azurerm, google
+- No alias needed (unless multiple regions inside same cloud)
+- Used for multi-cloud strategy

@@ -1,0 +1,175 @@
+## 1. Data Sources (VERY IMPORTANT)
+
+
+Data sources are used to fetch information about existing infrastructure so Terraform can use it without recreating resources.”
+
+| Type     | Purpose              |
+| -------- | -------------------- |
+| resource | Creates infra        |
+| data     | Reads existing infra |
+
+
+### Example: Fetch latest AMI
+```bash
+data "aws_ami" "latest" {
+  most_recent = true
+
+  owners = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*"]
+  }
+}
+```
+Use it in resource:
+```bash
+resource "aws_instance" "web" {
+  ami           = data.aws_ami.latest.id
+  instance_type = "t2.micro"
+}
+```
+
+### Real-World Use Cases
+- Get latest AMI dynamically
+- Fetch existing VPC
+- Use existing security group
+
+### Why important?
+- Without data sources:
+- You hardcode values ❌
+- Infra becomes outdated ❌
+
+## 2. Lifecycle Rules
+
+Lifecycle rules control resource behavior such as preventing deletion, ensuring zero downtime, or ignoring specific changes.
+
+### Common Lifecycle Arguments
+
+1. `prevent_destroy` - It Prevents accidental deletion of resources.
+```bash
+lifecycle {
+  prevent_destroy = true
+}
+```
+
+Example:
+
+- production databases should not be deleted accidentally.
+
+If u run terraform destroy it will show you the error and it will not delete the resource.
+
+2. `create_before_destroy` - This allows you to create a new resource before destroying the old one.
+```bash
+lifecycle {
+  create_before_destroy = true
+}
+
+### Use case:
+- Zero downtime deployments
+
+Example:
+
+- You are updating a database and you want to create a new database before destroying the old one.
+
+3. `ignore_changes` - This ignores changes to the resource.
+```bash
+lifecycle {
+  ignore_changes = true
+}
+```
+### Use case:
+- External systems modify resource
+
+## 3. Provisioners (VERY IMPORTANT)
+
+Provisioners are used to execute scripts on resources, but they are not recommended because they break idempotency, are hard to maintain, and mix infrastructure provisioning with configuration management.
+
+```bash
+resource "aws_instance" "web" {
+  ami           = "ami-123"
+  instance_type = "t2.micro"
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt update",
+      "sudo apt install nginx -y"
+    ]
+  }
+}
+```
+
+Types:
+1. `local-exec` - Runs on your machine
+```bash
+provisioner "local-exec" {
+  command = "echo 'Hello, World!'"
+}
+```
+
+2. `remote-exec` - Runs on remote server
+```bash
+provisioner "remote-exec" {
+  inline = [
+    "sudo apt update",
+    "sudo apt install nginx -y"
+  ]
+}
+```
+
+### Use case:
+- Installing software on the instance
+
+Example:
+- Installing nginx on the instance
+
+### Why NOT RECOMMENDED (VERY IMPORTANT)
+- Breaks Terraform purpose
+- Not idempotent
+- Hard to debug
+- Tight coupling
+
+✅ Better Alternative
+
+👉 Use:
+
+- Terraform → create infra
+- Ansible → configure servers
+
+## 4. Dependency Management
+
+Terraform manages dependencies automatically through references, known as implicit dependencies. In cases where dependencies are not clear, we use explicit dependencies using depends_on.
+
+1. Implicit Dependency (Automatic)
+```bash
+resource "aws_security_group" "sg" {}
+
+resource "aws_instance" "web" {
+  vpc_security_group_ids = [aws_security_group.sg.id]
+}
+```
+### What happens:
+Terraform automatically understands:
+-  SG → must be created before EC2
+
+👉 This is implicit dependency
+
+### 2. Explicit Dependency (depends_on)
+```bash
+resource "aws_instance" "web" {
+  ami           = "ami-123"
+  instance_type = "t2.micro"
+
+  depends_on = [aws_security_group.sg]
+}
+```
+### What it does:
+Forces dependency manually
+- When Terraform cannot detect dependency automatically
+- Null resources
+- External scripts
+- Provisioners
+
+### Common Mistake
+- Overusing depends_on ❌
+- Makes code messy
