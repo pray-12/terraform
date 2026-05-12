@@ -85,6 +85,15 @@ terraform destroy --auto-approve -target=aws_instance.myfirstinstance[0] # This 
 
 logic: Now i have deleted one instance, so current state is 2 instances and desired state is 3 instances. When i run `terraform apply`, So terraform will create one instance to match the desired state. This is how terraform works to maintain the desired state of infrastructure.
 
+What happens if infrastructure is manually changed outside Terraform?
+
+This is called: `Configuration Drift`
+
+Terraform detects the drift during plan or apply and attempts to reconcile infrastructure back to the declared configuration.
+```bash
+terraform refresh
+```
+
 ### Adding the key pair to the EC2 instance
 
 ```bash
