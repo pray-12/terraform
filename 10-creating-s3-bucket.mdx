@@ -40,6 +40,9 @@ resource "aws_s3_bucket_versioning" "versioning" {
 }
 ```
 
+### Can S3 Versioning be disabled after enabling?
+
+No. Once enabled, S3 versioning cannot be permanently disabled. It can only be `suspended`.
 ## Optional: Make it Private (recommended)
 
 ```bash
