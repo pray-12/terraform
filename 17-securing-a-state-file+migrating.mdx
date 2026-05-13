@@ -14,7 +14,7 @@ Example:
 ```
 If leaked → serious security risk ❌
 
-To secure Terraform state files, I use remote backends like S3 with encryption enabled, restrict access using IAM policies, enable versioning for recovery, use DynamoDB for state locking, and avoid storing state files in version control systems. Additionally, sensitive variables are marked to prevent exposure.
+To secure Terraform state files, I use remote backends like **S3 with encryption enabled, restrict access using IAM policies, enable versioning for recovery, use DynamoDB for state locking**, and **avoid storing state files** in version control systems. Additionally, sensitive variables are marked to prevent exposure.
 
 1. Create a s3 bucket with enabling versioning.
 
