@@ -73,6 +73,10 @@ terraform {
 ``` 
 When other teamates want to work they should have this block. 
 
+```bash
+terraform state pull
+```
+
 Scenario: If i don't write the backend code it will create in local but we need to get the changes from remote state file.
 
 When we will run terraform init it will ask us to migrate the old data with the command 
