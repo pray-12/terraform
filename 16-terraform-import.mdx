@@ -33,3 +33,14 @@ terraform import aws_instance.my_ec2 i-1234567890abcdef0
 - Import doesn’t validate full configuration
 - If config doesn’t match → Terraform may try to change resource
 - Always run terraform plan after import
+
+Note: VVP
+Find correct ami based on region
+```bash
+aws ec2 describe-images \
+--owners amazon \
+--region ap-south-2 \
+--filters "Name=name,Values=al2023-ami-*" \
+--query 'Images[*].[ImageId,Name]' \
+--output table
+```
