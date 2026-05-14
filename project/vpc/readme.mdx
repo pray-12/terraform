@@ -1,0 +1,596 @@
+# AWS Three-Tier Style Infrastructure Project using Terraform
+
+## Project Overview
+
+This project demonstrates how to provision a complete cloud infrastructure in AWS using Terraform.
+
+The architecture includes:
+
+* Custom VPC
+* Public Subnets across multiple Availability Zones
+* Internet Gateway
+* Route Tables
+* Security Groups
+* EC2 Instances
+* S3 Bucket
+* Application Load Balancer (ALB)
+* Target Groups
+* Listener Configuration
+* User Data automation
+
+This project represents a beginner-to-intermediate DevOps and Cloud Infrastructure deployment project and demonstrates Infrastructure as Code (IaC) concepts.
+
+---
+
+# Architecture Diagram
+
+![Architecture Diagram](/images/architecture.png)
+
+## Additional Service
+
+The architecture also includes an Amazon S3 bucket used for object storage.
+
+### S3 Use Cases in This Project
+
+* Store application assets
+* Backup files
+* Store logs
+* Static website files
+* Terraform remote state (future enhancement)
+
+---
+
+# Technologies Used
+
+| Technology      | Purpose                |
+| --------------- | ---------------------- |
+| AWS             | Cloud provider         |
+| Terraform       | Infrastructure as Code |
+| EC2             | Virtual servers        |
+| VPC             | Isolated cloud network |
+| ALB             | Load balancing         |
+| S3              | Object storage         |
+| Security Groups | Firewall rules         |
+| Linux User Data | Server bootstrapping   |
+
+---
+
+# Project Workflow
+
+## Step 1 — Create VPC
+
+```hcl
+resource "aws_vpc" "myvpc"
+```
+
+A custom VPC is created using a CIDR block.
+
+### Purpose
+
+* Creates isolated AWS network
+* Provides IP address range
+* Acts as the base infrastructure
+
+### Interview Explanation
+
+A VPC is a logically isolated virtual network in AWS where resources like EC2, subnets, route tables, and gateways are deployed.
+
+---
+
+# Step 2 — Create Public Subnets
+
+```hcl
+resource "aws_subnet" "subnet_1"
+resource "aws_subnet" "subnet_2"
+```
+
+Two subnets are created in different Availability Zones.
+
+### Purpose
+
+* High Availability
+* Fault Tolerance
+* Multi-AZ architecture
+
+### Important Configuration
+
+```hcl
+map_public_ip_on_launch = true
+```
+
+This automatically assigns public IPs to EC2 instances.
+
+### Why These Are Public Subnets
+
+Because:
+
+1. They have route to Internet Gateway
+2. Instances receive public IPs
+
+---
+
+# Step 3 — Create Internet Gateway
+
+```hcl
+resource "aws_internet_gateway" "igw"
+```
+
+### Purpose
+
+Allows communication between:
+
+* VPC
+* Internet
+
+### Interview Explanation
+
+Internet Gateway enables internet access for resources inside the VPC.
+
+Without IGW:
+
+* no internet connectivity
+* no outbound internet access
+* no public website hosting
+
+---
+
+# Step 4 — Create Route Table
+
+```hcl
+resource "aws_route_table" "rt"
+```
+
+### Route Configured
+
+```hcl
+0.0.0.0/0 → Internet Gateway
+```
+
+### Purpose
+
+Controls traffic routing.
+
+### Interview Explanation
+
+Route tables determine where traffic from a subnet should go.
+
+The default route:
+
+```text
+0.0.0.0/0
+```
+
+means all internet traffic.
+
+---
+
+# Step 5 — Associate Route Table with Subnets
+
+```hcl
+resource "aws_route_table_association"
+```
+
+### Purpose
+
+Attaches routing rules to subnets.
+
+### Result
+
+Both subnets become public subnets.
+
+---
+
+# Step 6 — Create Security Group
+
+```hcl
+resource "aws_security_group" "sg"
+```
+
+### Allowed Traffic
+
+| Port | Protocol | Purpose |
+| ---- | -------- | ------- |
+| 22   | TCP      | SSH     |
+| 80   | TCP      | HTTP    |
+
+### Outbound
+
+All outbound traffic allowed.
+
+### Interview Explanation
+
+Security Groups act as virtual firewalls for EC2 instances.
+
+They are:
+
+* stateful
+* instance-level firewalls
+
+---
+
+# Step 7 — Launch EC2 Instances
+
+```hcl
+resource "aws_instance" "myinstance-1"
+resource "aws_instance" "myinstance-2"
+```
+
+Two EC2 instances are launched in different Availability Zones.
+
+### Purpose
+
+* High Availability
+* Load balancing
+* Redundancy
+
+### User Data
+
+```hcl
+user_data = base64encode(file("userdata.sh"))
+```
+
+### Purpose of User Data
+
+Automates:
+
+* package installation
+* web server setup
+* HTML deployment
+* configuration during boot
+
+### Interview Explanation
+
+User Data is used to bootstrap EC2 instances automatically during launch.
+
+---
+
+# Step 8 — Create S3 Bucket
+
+```hcl
+resource "aws_s3_bucket" "mybucket"
+```
+
+### Purpose
+
+Used for:
+
+* object storage
+* backups
+* logs
+* Terraform state storage
+* static assets
+
+### Interview Explanation
+
+Amazon S3 is highly durable object storage service.
+
+---
+
+# Step 9 — Create Application Load Balancer
+
+```hcl
+resource "aws_lb" "myalb"
+```
+
+### Type
+
+Application Load Balancer (ALB)
+
+### Purpose
+
+Distributes traffic across multiple EC2 instances.
+
+### Benefits
+
+* High Availability
+* Fault Tolerance
+* Traffic distribution
+* Better scalability
+
+### Interview Explanation
+
+ALB works at Layer 7 (Application Layer) and supports:
+
+* HTTP
+* HTTPS
+* path-based routing
+* host-based routing
+
+---
+
+# Step 10 — Create Target Group
+
+```hcl
+resource "aws_lb_target_group" "mytargetgroup"
+```
+
+### Purpose
+
+Registers EC2 instances behind ALB.
+
+### Health Check
+
+```hcl
+health_check {
+    path = "/"
+}
+```
+
+### Purpose of Health Check
+
+ALB continuously checks instance health.
+
+If instance becomes unhealthy:
+
+* traffic stops routing to it
+
+---
+
+# Step 11 — Attach EC2 Instances to Target Group
+
+```hcl
+resource "aws_lb_target_group_attachment"
+```
+
+### Purpose
+
+Connects EC2 instances with ALB target group.
+
+---
+
+# Step 12 — Create ALB Listener
+
+```hcl
+resource "aws_lb_listener" "mylistener"
+```
+
+### Purpose
+
+Listener waits for incoming traffic.
+
+### Configuration
+
+* Port: 80
+* Protocol: HTTP
+
+### Workflow
+
+```text
+User Request
+     ↓
+ALB Listener
+     ↓
+Target Group
+     ↓
+Healthy EC2 Instance
+```
+
+---
+
+# End-to-End Request Flow
+
+```text
+User
+ ↓
+Application Load Balancer
+ ↓
+Listener
+ ↓
+Target Group
+ ↓
+Healthy EC2 Instance
+ ↓
+Web Application Response
+```
+
+---
+
+# Key Terraform Concepts Used
+
+| Concept       | Usage                       |
+| ------------- | --------------------------- |
+| Resources     | AWS infrastructure creation |
+| Variables     | Reusable configuration      |
+| Outputs       | Display values              |
+| User Data     | EC2 automation              |
+| Interpolation | Resource references         |
+| Tags          | Resource identification     |
+
+---
+
+# Important AWS Concepts Demonstrated
+
+| Service          | Concept               |
+| ---------------- | --------------------- |
+| VPC              | Networking            |
+| Subnets          | Network segmentation  |
+| Route Tables     | Traffic routing       |
+| Internet Gateway | Internet connectivity |
+| Security Groups  | Firewall              |
+| EC2              | Compute               |
+| ALB              | Load balancing        |
+| S3               | Object storage        |
+
+---
+
+# Interview Questions and Answers
+
+## 1. What is Infrastructure as Code?
+
+Infrastructure as Code (IaC) is the process of managing infrastructure using code instead of manual configuration.
+
+Terraform is one of the most popular IaC tools.
+
+---
+
+## 2. Why did you use multiple subnets?
+
+To achieve:
+
+* High Availability
+* Fault Tolerance
+* Multi-AZ deployment
+
+If one Availability Zone fails, the application remains accessible.
+
+---
+
+## 3. How does a subnet become public?
+
+A subnet becomes public when:
+
+1. Route table has route to Internet Gateway
+2. EC2 instances have public IPs
+
+---
+
+## 4. Difference between Security Group and NACL?
+
+| Security Group   | NACL           |
+| ---------------- | -------------- |
+| Stateful         | Stateless      |
+| Instance-level   | Subnet-level   |
+| Allow rules only | Allow and deny |
+
+---
+
+## 5. Why did you use an ALB?
+
+To:
+
+* distribute traffic
+* improve availability
+* provide scalability
+* avoid single point of failure
+
+---
+
+## 6. What is the purpose of Target Group?
+
+Target Group contains backend EC2 instances that receive traffic from ALB.
+
+---
+
+## 7. What happens if one EC2 instance fails?
+
+ALB health checks detect failure.
+
+Traffic is automatically routed only to healthy instances.
+
+---
+
+## 8. What is User Data?
+
+User Data is a startup script executed during EC2 boot process.
+
+Used for:
+
+* installing packages
+* configuring servers
+* deploying applications
+
+---
+
+## 9. Why use Terraform?
+
+Benefits:
+
+* automation
+* consistency
+* reproducibility
+* version control
+* scalability
+
+---
+
+# Project Improvements (Future Enhancements)
+
+## Add NAT Gateway
+
+To create private subnets with internet access.
+
+---
+
+## Add Auto Scaling Group
+
+For automatic scaling.
+
+---
+
+## Add HTTPS Listener
+
+Improve security using SSL certificates.
+
+---
+
+## Store Terraform State in S3
+
+For remote collaboration.
+
+---
+
+## Add CloudWatch Monitoring
+
+For logging and observability.
+
+---
+
+## Add Route53 Domain
+
+For custom DNS.
+
+---
+
+# Challenges Faced During Project
+
+* Route table association errors
+* Security group configuration
+* ALB health check troubleshooting
+* User data rendering issues
+* Subnet and CIDR understanding
+* Terraform resource naming errors
+
+---
+
+# Key Learnings
+
+Through this project, I learned:
+
+* AWS networking fundamentals
+* Terraform resource dependency management
+* Multi-AZ architecture
+* Load balancing concepts
+* Infrastructure automation
+* EC2 bootstrapping
+* Security group configuration
+* Cloud architecture design
+
+---
+
+# Conclusion
+
+This project demonstrates practical implementation of AWS cloud infrastructure using Terraform.
+
+It covers:
+
+* Networking
+* Compute
+* Security
+* Storage
+* Load Balancing
+* Automation
+
+The project helped strengthen understanding of:
+
+* DevOps practices
+* Infrastructure as Code
+* AWS architecture
+* High availability systems
+* Production-style deployments
+
+This architecture can further evolve into:
+
+* Production-grade Kubernetes platform
+* CI/CD infrastructure
+* Platform Engineering setup
+* Highly scalable cloud architecture
