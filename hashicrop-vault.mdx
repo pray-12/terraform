@@ -1,151 +1,231 @@
 **HashiCorp Vault** is a secret management tool used to securely store sensitive information like passwords, API keys, and tokens. 
 It provides encryption, access control, audit logging, and dynamic secret generation for secure infrastructure and application management.
 
-# Vault Integration
+## What is HashiCorp Vault?
 
-Here are the detailed steps for each of these steps:
+**HashiCorp Vault** is a secret management tool used to securely store and manage:
 
-## Create an AWS EC2 instance with Ubuntu
+- Passwords
+- API Keys
+- Tokens
+- Database Credentials
+- SSH Keys
+- Certificates
 
-To create an AWS EC2 instance with Ubuntu, you can use the AWS Management Console or the AWS CLI. Here are the steps involved in creating an EC2 instance using the AWS Management Console:
+---
 
-- Go to the AWS Management Console and navigate to the EC2 service.
-- Click on the Launch Instance button.
-- Select the Ubuntu Server xx.xx LTS AMI.
-- Select the instance type that you want to use.
-- Configure the instance settings.
-- Click on the Launch button.
-- Add SG `8200`
+# 🏢 Real Scenario
 
-## Install Vault on the EC2 instance
+Suppose an application needs a database password.
 
-To install Vault on the EC2 instance, you can use the following steps:
-
-**Install gpg**
-
-```
-sudo apt update && sudo apt install gpg
+❌ Bad Practice:
+```python
+password = "Admin123"
 ```
 
-**Download the signing key to a new keyring**
+Problems:
+- Exposed in code
+- Can leak in GitHub
+- Security risk
 
-```
-wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-```
+---
 
-**Verify the key's fingerprint**
+# ✅ Better Solution Using Vault
 
-```
-gpg --no-default-keyring --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg --fingerprint
-```
-
-**Add the HashiCorp repo**
-
-```
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+```text
+Application → Vault → Get Secret Securely
 ```
 
-```
+Vault securely stores and provides secrets only to authorized users/applications.
+
+---
+
+# 🚀 Step 1 — Install Vault
+
+## Ubuntu Installation
+
+```bash
 sudo apt update
+sudo apt install vault -y
 ```
 
-**Finally, Install Vault**
-
-```
-sudo apt install vault
-```
-
-## Start Vault.
-
-To start Vault, you can use the following command:
-
-```
-vault server -dev -dev-listen-address="0.0.0.0:8200"
-```
-
-- Open one more ubuntu instance and run  this `export VAULT_ADDR=...' 
-
-## Configure Terraform to read the secret from Vault.
-
-Detailed steps to enable and configure AppRole authentication in HashiCorp Vault:
-
-1. **Enable AppRole Authentication**:
-
-To enable the AppRole authentication method in Vault, you need to use the Vault CLI or the Vault HTTP API.
-
-**Using Vault CLI**:
-
-Run the following command to enable the AppRole authentication method:
+Check version:
 
 ```bash
-vault auth enable approle
+vault --version
 ```
 
-This command tells Vault to enable the AppRole authentication method.
+---
 
-2. **Create an AppRole**:
-
-We need to create policy first,
-
-```
-vault policy write terraform - <<EOF
-path "*" {
-  capabilities = ["list", "read"]
-}
-
-path "secrets/data/*" {
-  capabilities = ["create", "read", "update", "delete", "list"]
-}
-
-path "kv/data/*" {
-  capabilities = ["create", "read", "update", "delete", "list"]
-}
-
-
-path "secret/data/*" {
-  capabilities = ["create", "read", "update", "delete", "list"]
-}
-
-path "auth/token/create" {
-capabilities = ["create", "read", "update", "list"]
-}
-EOF
-```
-
-Now you'll need to create an AppRole with appropriate policies and configure its authentication settings. Here are the steps to create an AppRole:
-
-**a. Create the AppRole**:
+# 🚀 Step 2 — Start Vault Server (Development Mode)
 
 ```bash
-vault write auth/approle/role/terraform \
-    secret_id_ttl=10m \
-    token_num_uses=10 \
-    token_ttl=20m \
-    token_max_ttl=30m \
-    secret_id_num_uses=40 \
-    token_policies=terraform
+vault server -dev
 ```
 
-3. **Generate Role ID and Secret ID**:
+Output:
 
-After creating the AppRole, you need to generate a Role ID and Secret ID pair. The Role ID is a static identifier, while the Secret ID is a dynamic credential.
-
-**a. Generate Role ID**:
-
-You can retrieve the Role ID using the Vault CLI:
-
-```bash
-vault read auth/approle/role/my-approle/role-id
+```text
+Root Token: hvs.xxxxx
 ```
 
-Save the Role ID for use in your Terraform configuration.
+Vault starts locally in development mode.
 
-**b. Generate Secret ID**:
+---
 
-To generate a Secret ID, you can use the following command:
+# 🌍 Step 3 — Configure Environment Variable
+
+Open another terminal:
 
 ```bash
-vault write -f auth/approle/role/my-approle/secret-id
-   ```
+export VAULT_ADDR='http://127.0.0.1:8200'
+```
 
-This command generates a Secret ID and provides it in the response. Save the Secret ID securely, as it will be used for Terraform authentication.
+---
+
+# 🔑 Step 4 — Login to Vault
+
+```bash
+vault login
+```
+
+Paste the root token generated earlier.
+
+---
+
+# 🔐 Step 5 — Store Secret
+
+Store database credentials:
+
+```bash
+vault kv put secret/db \
+username="admin" \
+password="Admin123"
+```
+
+---
+
+# 📥 Step 6 — Retrieve Secret
+
+```bash
+vault kv get secret/db
+```
+
+Example Output:
+
+```text
+====== Secret Path ======
+secret/data/db
+
+====== Data ======
+username    admin
+password    Admin123
+```
+
+---
+
+# ❌ Step 7 — Delete Secret
+
+```bash
+vault kv delete secret/db
+```
+
+---
+
+# 🔥 Real Application Workflow
+
+```text
+Application
+     ↓
+Authenticates to Vault
+     ↓
+Vault verifies access
+     ↓
+Vault returns secret securely
+```
+
+---
+
+# 🔒 Important Vault Concepts
+
+## 1. Authentication
+
+Vault verifies:
+- Users
+- Applications
+- Jenkins
+- Kubernetes
+- Terraform
+
+before providing secrets.
+
+---
+
+## 2. Policies
+
+Policies define permissions.
+
+Example:
+```text
+Developer → Read-only access
+Admin → Full access
+```
+
+---
+
+## 3. Secret Engines
+
+Vault supports multiple secret engines:
+
+- KV Secrets
+- AWS Secrets
+- Database Secrets
+- Kubernetes Secrets
+- PKI Certificates
+
+---
+
+# 🔥 Dynamic Secrets (Important Feature)
+
+Vault can generate temporary credentials automatically.
+
+Example:
+
+```text
+Username: temp-user
+Password: x7hd92
+Validity: 1 hour
+```
+
+After expiry:
+- Credentials become invalid automatically.
+
+This improves security significantly.
+
+---
+
+# 🏢 Real DevOps Example
+
+## CI/CD Pipeline Flow
+
+```text
+Jenkins
+   ↓
+Authenticates to Vault
+   ↓
+Fetches AWS Credentials
+   ↓
+Deploys Infrastructure
+```
+
+No passwords stored inside Jenkins pipelines.
+
+---
+
+# 🧠 Easy Analogy
+
+| Tool | Analogy |
+|---|---|
+| Vault | Secure digital locker |
+| Secret | Valuable item inside locker |
+| Token | Locker access key |
