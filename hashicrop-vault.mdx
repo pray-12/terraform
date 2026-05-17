@@ -229,3 +229,39 @@ No passwords stored inside Jenkins pipelines.
 | Vault | Secure digital locker |
 | Secret | Valuable item inside locker |
 | Token | Locker access key |
+
+
+| Feature                  | HashiCorp Vault     | Ansible Vault            |
+| ------------------------ | ------------------- | ------------------------ |
+| Purpose                  | Secret management   | File encryption          |
+| Stores Secrets Centrally | ✅ Yes               | ❌ No                     |
+| Dynamic Secrets          | ✅ Yes               | ❌ No                     |
+| Secret Rotation          | ✅ Automatic         | ❌ Manual                 |
+| Access Control           | Advanced            | Basic                    |
+| API Integration          | ✅ Yes               | Limited                  |
+| Best For                 | Enterprise security | Encrypting Ansible files |
+
+
+## How Does Vault Store Secrets?
+
+Vault stores secrets inside encrypted storage called a:
+
+```text
+Secret Engine
+```
+
+Example:
+
+```text
+vault kv put secret/db \
+username="admin" \
+password="Admin123"
+```
+
+Retrieve secret:
+
+```text
+vault kv get secret/db
+```
+
+Vault encrypts data before storing it.
